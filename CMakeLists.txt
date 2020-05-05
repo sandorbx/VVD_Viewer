@@ -44,8 +44,9 @@ IF((COMMAND cmake_policy) AND NOT (CMAKE_MAJOR_VERSION LESS 3))
     CMAKE_POLICY(SET CMP0043 NEW)
 ENDIF()
 
-if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+# if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
    # Mac OS X
+if(UNIX OR APPLE OR MINGW)  
    set(ARCHITECTURE 64)
 else()
    # Windows
@@ -101,7 +102,7 @@ endif()
 
 include(${wxWidgets_USE_FILE})
 set(wxWidgets_USE_STATIC ON)
-if (APPLE)
+if(UNIX OR APPLE OR MINGW)
    find_package(TIFF REQUIRED)
    include_directories(${TIFF_INCLUDE_DIR})
 else()
@@ -121,6 +122,13 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
                    wxWidgets_LIBRARIES ${wxWidgets_LIBRARIES})
   find_package(Freetype REQUIRED)
   include_directories(${FREETYPE_INCLUDE_DIRS})
+elseif(UNIX OR MINGW)
+  foreach(arg ${wxWidgets_LIBRARIES})
+    set(wxlib_out "${wxlib_out} ${arg}")
+  endforeach()
+  string(STRIP ${wxlib_out} wxWidgets_LIBRARIES)
+  string(REGEX REPLACE "wx_gtk3u_scintilla" "wxscintilla"
+    wxWidgets_LIBRARIES ${wxWidgets_LIBRARIES})  
 endif()
 
 #OpenGL
@@ -187,8 +195,9 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
   endforeach()
   add_definitions(-D__STDC_CONSTANT_MACROS)
 else()
-  include_directories(${VVDViewer_SOURCE_DIR}/fluorender/ffmpeg/OSX/include)
-  file(GLOB ffmpeg_LIBRARIES ${VVDViewer_SOURCE_DIR}/fluorender/ffmpeg/OSX/lib/*.a)
+  include_directories(${VVDViewer_SOURCE_DIR}/fluorender/ffmpeg/include)
+  file(GLOB ffmpeg_LIBRARIES ${VVDViewer_SOURCE_DIR}/fluorender/ffmpeg/lib/Unix/*.a)
+  add_definitions(-D__STDC_CONSTANT_MACROS)
 endif()
 
 #curl
@@ -379,36 +388,127 @@ elseif(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
    endif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 endif()
 
+if(UNIX OR MINGW)
+  # Linux
+  #if(NOT OPEN_GL_HEADER_LOC)
+  #  add_definitions(-DOPEN_GL_HEADER_LOC=<OpenGL/gl.h>)
+  #endif()
+  #if(NOT OPEN_GLU_HEADER_LOC)
+  #  add_definitions(-DOPEN_GLU_HEADER_LOC=<OpenGL/glu.h>)
+  #endif()
+  #add_definitions(-D_DARWIN)
+  set(CFLAGS "-fPIC")
+  set(CXXFLAGS "-fPIC ")
+  #include(BundleUtilities)
+  add_executable(VVDViewer
+  ${src} ${hdr} ${rsc} ${icns}
+      $<TARGET_OBJECTS:IMAGES_OBJ>
+      $<TARGET_OBJECTS:CONVERTERS_OBJ>
+      $<TARGET_OBJECTS:FLIVR_OBJ>
+      $<TARGET_OBJECTS:ANIMATORS_OBJ>
+      $<TARGET_OBJECTS:TYPES_OBJ>
+      $<TARGET_OBJECTS:NV_OBJ>
+      $<TARGET_OBJECTS:FORMATS_OBJ>
+      $<TARGET_OBJECTS:FLOBJECT_OBJ>
+      $<TARGET_OBJECTS:TRACKING_OBJ>
+      $<TARGET_OBJECTS:VIDEO_OBJ>
+      $<TARGET_OBJECTS:GLEW_OBJ>
+      $<TARGET_OBJECTS:POLE_OBJ>
+      $<TARGET_OBJECTS:TEEM_OBJ>
+      $<TARGET_OBJECTS:COMPONENTS_OBJ>
+      $<TARGET_OBJECTS:DISTANCE_OBJ>
+      $<TARGET_OBJECTS:SELECTION_OBJ>
+      $<TARGET_OBJECTS:SCRIPT_OBJ>
+      $<TARGET_OBJECTS:SCENEGRAPH_OBJ>)
+      
+#     ${src} ${hdr} ${rsc} ${icns}
+#     $<TARGET_OBJECTS:IMAGES_OBJ>
+#     $<TARGET_OBJECTS:CONVERTERS_OBJ>
+#     $<TARGET_OBJECTS:FLIVR_OBJ>
+#     $<TARGET_OBJECTS:ANIMATORS_OBJ>
+#     $<TARGET_OBJECTS:TYPES_OBJ>
+#    $<TARGET_OBJECTS:FLOBJECT_OBJ>
+#    $<TARGET_OBJECTS:SCENEGRAPH_OBJ>
+#     $<TARGET_OBJECTS:NV_OBJ>
+#     $<TARGET_OBJECTS:FORMATS_OBJ>
+#    $<TARGET_OBJECTS:VIDEO_OBJ>
+#     $<TARGET_OBJECTS:TRACKING_OBJ>
+#     $<TARGET_OBJECTS:COMPONENTS_OBJ>
+#      $<TARGET_OBJECTS:SELECTION_OBJ>
+#      $<TARGET_OBJECTS:SCRIPT_OBJ>
+#      $<TARGET_OBJECTS:CLUSTER_OBJ>
+#      $<TARGET_OBJECTS:DISTANCE_OBJ>
+#      $<TARGET_OBJECTS:CALCULATE_OBJ>)
+#     $<TARGET_OBJECTS:GLEW_OBJ>
+#     $<TARGET_OBJECTS:POLE_OBJ>
+#     $<TARGET_OBJECTS:TEEM_OBJ>)
+    endif()
+
 #architecture specific rules
 if(${ARCHITECTURE} MATCHES 64)
-   if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-      set(ARCH_FLAGS "-m64 -arch x86_64")
-   endif(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-   add_definitions(-DTEEM_32BIT=0)
-   set(CMAKE_C_FLAGS "${ARCH_FLAGS} ${CFLAGS}")
-   set(CMAKE_CXX_FLAGS "${ARCH_FLAGS} ${CXXFLAGS} ${CXX_11_FLAG}")
-   set(CMAKE_EXE_LINKER_FLAGS "${ARCH_FLAGS} ${CXX_11_FLAG}")
+  if(APPLE)
+    set(ARCH_FLAGS "-m64 -arch x86_64")
+  endif()
+  add_definitions(-DTEEM_32BIT=0)
+  set(CMAKE_C_FLAGS "${ARCH_FLAGS} ${CFLAGS}")
+  set(CMAKE_CXX_FLAGS "${ARCH_FLAGS} ${CXXFLAGS} ${CXX_11_FLAG}")
+  set(CMAKE_EXE_LINKER_FLAGS "${ARCH_FLAGS} ${CXX_11_FLAG}")
 else()
-   if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-      set(ARCH_FLAGS "-m32 -arch i386")
-   endif(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-   add_definitions(-DTEEM_32BIT=1)
-   set(CMAKE_C_FLAGS "${ARCH_FLAGS} ${CFLAGS}" )
-   set(CMAKE_CXX_FLAGS "${ARCH_FLAGS} ${CXXFLAGS} ${CXX_11_FLAG}")
-   set(CMAKE_EXE_LINKER_FLAGS "${ARCH_FLAGS} ${CXX_11_FLAG}")
+  if(APPLE)
+    set(ARCH_FLAGS "-m32 -arch i386")
+  endif()
+  add_definitions(-DTEEM_32BIT=1)
+  set(CMAKE_C_FLAGS "${ARCH_FLAGS} ${CFLAGS}")
+  set(CMAKE_CXX_FLAGS "${ARCH_FLAGS} ${CXXFLAGS} ${CXX_11_FLAG}")
+  set(CMAKE_EXE_LINKER_FLAGS "${ARCH_FLAGS} ${CXX_11_FLAG}")
 endif()
-
-if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-   set(CMAKE_EXE_LINKER_FLAGS "-L/usr/local/lib -L/usr/lib ${CMAKE_EXE_LINKER_FLAGS} -lbz2 -framework OpenCL -framework CoreFoundation -framework CoreVideo -framework VideoDecodeAcceleration")
-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmacosx-version-min=10.9 -DWX_PRECOMP -std=c++11 -stdlib=libc++")
-   #make sure png is static linked
-   string(REGEX REPLACE "-lpng" "/usr/local/lib/libpng.a" 
-			wxWidgets_LIBRARIES ${wxWidgets_LIBRARIES})
-   string(REGEX REPLACE "-lpng" "/usr/local/lib/libpng.a" 
-			CMAKE_MAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS})
-   string(REGEX REPLACE "/usr/local/lib/libfreetype.dylib" "/usr/local/lib/libfreetype.a;/usr/local/lib/libpng.a" 
-     FREETYPE_LIBRARIES ${FREETYPE_LIBRARIES})
-   message(STATUS "${FREETYPE_LIBRARIES}")
+# if(${ARCHITECTURE} MATCHES 64)
+#    if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+#       set(ARCH_FLAGS "-m64 -arch x86_64")
+#    endif(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+#    add_definitions(-DTEEM_32BIT=0)
+#    set(CMAKE_C_FLAGS "${ARCH_FLAGS} ${CFLAGS}")
+#    set(CMAKE_CXX_FLAGS "${ARCH_FLAGS} ${CXXFLAGS} ${CXX_11_FLAG}")
+#    set(CMAKE_EXE_LINKER_FLAGS "${ARCH_FLAGS} ${CXX_11_FLAG}")
+# else()
+#    if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+#       set(ARCH_FLAGS "-m32 -arch i386")
+#    endif(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+#    add_definitions(-DTEEM_32BIT=1)
+#    set(CMAKE_C_FLAGS "${ARCH_FLAGS} ${CFLAGS}" )
+#    set(CMAKE_CXX_FLAGS "${ARCH_FLAGS} ${CXXFLAGS} ${CXX_11_FLAG}")
+#    set(CMAKE_EXE_LINKER_FLAGS "${ARCH_FLAGS} ${CXX_11_FLAG}")
+# endif()
+# 
+# if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+#    set(CMAKE_EXE_LINKER_FLAGS "-L/usr/local/lib -L/usr/lib ${CMAKE_EXE_LINKER_FLAGS} -lbz2 -framework OpenCL -framework CoreFoundation -framework CoreVideo -framework VideoDecodeAcceleration")
+#    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmacosx-version-min=10.9 -DWX_PRECOMP -std=c++11 -stdlib=libc++")
+#    #make sure png is static linked
+#    string(REGEX REPLACE "-lpng" "/usr/local/lib/libpng.a" 
+# 			wxWidgets_LIBRARIES ${wxWidgets_LIBRARIES})
+#    string(REGEX REPLACE "-lpng" "/usr/local/lib/libpng.a" 
+# 			CMAKE_MAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS})
+#    string(REGEX REPLACE "/usr/local/lib/libfreetype.dylib" "/usr/local/lib/libfreetype.a;/usr/local/lib/libpng.a" 
+#      FREETYPE_LIBRARIES ${FREETYPE_LIBRARIES})
+#    message(STATUS "${FREETYPE_LIBRARIES}")
+#     elseif(UNIX OR MINGW)
+#     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lpthread -ldl")
+# endif()
+# if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+#    set(CMAKE_EXE_LINKER_FLAGS "-L/usr/local/lib -L/usr/lib ${CMAKE_EXE_LINKER_FLAGS} -lpng -lbz2 -framework IOSurface -framework Metal -framework VideoToolbox -framework CoreMedia -framework Security -framework CoreFoundation -framework CoreVideo -framework VideoDecodeAcceleration -framework QuartzCore")
+#    set(CMAKE_SHARED_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS})
+#    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmacosx-version-min=10.9 -DWX_PRECOMP -std=c++14 -stdlib=libc++")
+# #   make sure png is static linked
+#    string(REGEX REPLACE "-lpng" "/usr/local/lib/libpng.a" 
+# 			wxWidgets_LIBRARIES ${wxWidgets_LIBRARIES})
+#    string(REGEX REPLACE "-lpng" "/usr/local/lib/libpng.a" 
+# 			CMAKE_MAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS})
+#    string(REGEX REPLACE "/usr/local/lib/libfreetype.dylib" "/usr/local/lib/libfreetype.a;/usr/local/lib/libpng.a" 
+#      FREETYPE_LIBRARIES ${FREETYPE_LIBRARIES})
+#    message(STATUS "${FREETYPE_LIBRARIES}")
+if(UNIX OR MINGW)
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lpthread")
+  set(CMAKE_CXX_STANDARD_LIBRARIES "-ldl -lz -llzma -lm -L${VVDViewer_SOURCE_DIR}/fluorender/ffmpeg/lib/Unix/ -lavformat -lavcodec -lswscale -lswresample -lavutil")
 endif()
 
 #link the libraries
@@ -424,19 +524,27 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 	   ${OPENCL_LIBRARIES}
 	   ${FREETYPE_LIBRARIES}
 	   ${wxWidgets_LIBRARIES})
-elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+elseif(UNIX OR APPLE OR MINGW)
 	target_link_libraries(VVDViewer
-	   ${CURL_LIBRARIES}
-	   ${JPEG_LIBRARIES}
-	   ${ZLIB_LIBRARIES}
-	   ${OPENSSL_LIBRARIES}
-	   ${SSL_DEP_LIBRARIES}
-	   ${ffmpeg_LIBRARIES}
-	   ${OPENGL_LIBRARIES}
-	   ${Boost_LIBRARIES}
-	   ${OPENCL_LIBRARIES}
-	   ${FREETYPE_LIBRARIES}
-	   ${wxWidgets_LIBRARIES})
+	${ffmpeg_LIBRARIES}
+    ${OPENGL_LIBRARIES}
+    ${Boost_LIBRARIES}
+    ${OpenCL_LIBRARIES}
+    ${wxWidgets_LIBRARIES}
+    ${FREETYPE_LIBRARIES}
+    ${TIFF_LIBRARIES}
+	${PNG_LIBRARIES}
+    ${ZLIB_LIBRARIES}
+ 	${CURL_LIBRARIES}
+    ${JPEG_LIBRARIES}
+    ${ZLIB_LIBRARIES}
+    ${OPENSSL_LIBRARIES}
+    ${SSL_DEP_LIBRARIES}
+    ${OPENGL_LIBRARIES}
+    ${Boost_LIBRARIES}
+    ${OPENCL_LIBRARIES}
+    ${FREETYPE_LIBRARIES}
+    ${wxWidgets_LIBRARIES})
 endif()
 
 #build OpenCL examples copies.

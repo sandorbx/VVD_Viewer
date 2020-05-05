@@ -2,6 +2,9 @@
 #define KernelProgram_h
 
 #include <GL/glew.h>
+#if defined(__linux__)
+#include <GL/glx.h>
+#endif
 #ifdef _WIN32
 #include <CL/cl.h>
 #include <CL/cl_gl.h>

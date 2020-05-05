@@ -162,6 +162,9 @@ inline void FIND_FILES(std::wstring m_path_name,
 
 #else // MAC OSX or LINUX
 
+#include <string>
+#include <cstring> 
+#include <locale>
 #include <unistd.h>
 #include <dirent.h>
 #include <sys/time.h>

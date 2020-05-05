@@ -1,0 +1,14 @@
+prefix=/home/sailanarmo/Documents/fluorender/fluorender/ffmpeg/lib/Unix
+exec_prefix=${prefix}
+libdir=/home/sailanarmo/Documents/fluorender/fluorender/ffmpeg/lib/Unix/lib
+includedir=/home/sailanarmo/Documents/fluorender/fluorender/ffmpeg/lib/Unix/include
+
+Name: libavutil
+Description: FFmpeg utility library
+Version: 56.22.100
+Requires: 
+Requires.private: 
+Conflicts:
+Libs: -L${libdir}  -lavutil -pthread -lm
+Libs.private: 
+Cflags: -I${includedir}

@@ -78,11 +78,28 @@ namespace FLIVR
         device_id_ = best_devid;
         device_ = best_dev;
         
-#ifdef _DARWIN
-        gl_context_ =CGLGetCurrentContext();
+   #if defined(_DARWIN) || defined(__linux__)
+		cl_context_properties properties[] =
+		{
+			#if defined(_DARWIN) 
+			CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE,
+			(cl_context_properties)CGLGetShareGroup(CGLGetCurrentContext()),
+			#elif defined(__linux__)
+			// https://www.codeproject.com/Articles/685281/OpenGL-OpenCL-Interoperability-A-Case-Study-Using
+			CL_GL_CONTEXT_KHR , (cl_context_properties)glXGetCurrentContext() ,
+			CL_GLX_DISPLAY_KHR , (cl_context_properties)glXGetCurrentDisplay() ,
+			#endif
+			CL_CONTEXT_PLATFORM, (cl_context_properties)0,
+			0
+		};
 #endif
-        cl_context_properties properties[] =
-        {
+     
+        
+// #ifdef _DARWIN
+//         gl_context_ =CGLGetCurrentContext();
+// #endif
+//         cl_context_properties properties[] =
+//         {
 #ifdef _WIN32
             CL_GL_CONTEXT_KHR, (cl_context_properties)wglGetCurrentContext(),
             CL_WGL_HDC_KHR, (cl_context_properties)wglGetCurrentDC(),
@@ -90,6 +107,14 @@ namespace FLIVR
 #ifdef _DARWIN
             CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE,
             (cl_context_properties) CGLGetShareGroup( gl_context_),
+#endif
+#if defined(_DARWIN) || defined(__linux__)
+			properties[3] = (cl_context_properties)(platforms[i]);
+			if (device_id_ >= 0 && device_id_ < device_num)
+				device_ = devices[device_id_];
+			else
+				device_ = devices[0];
+			delete[] devices;
 #endif
             CL_CONTEXT_PLATFORM, (cl_context_properties)platforms[best_pid],
             0
